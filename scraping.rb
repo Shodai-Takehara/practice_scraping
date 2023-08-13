@@ -83,7 +83,7 @@ end
 # メイン処理
 driver = initialize_browser
 items_to_search = {
-  "RRL Tシャツ" => [1000, 10000],
+  "RRL Tシャツ" => [5000, 6000],
   "ラルフローレン アロハシャツ" => [1000, 10000]
 }
 
@@ -94,18 +94,35 @@ CSV.open(CSV_FILE, 'w', encoding: 'Shift_JIS') do |csv|
     search_item(driver, word, min_max_price[0], min_max_price[1])
 
     wait = Selenium::WebDriver::Wait.new(timeout: TIMEOUT)
-    driver.find_elements(:css, '.Products__items > li.Product').each do |product|
-      title, price, postage, time_left, url, image_url = fetch_product_info(product)
-      new_postage = format_postage(postage)
-      total_price = calculate_total_price(price, new_postage, postage)
 
-      next unless time_left.include?('時間')
+    continue_scraping = true
 
-      hours_left = time_left.gsub('時間', '').strip.to_i
-      next if hours_left > 12
+    while continue_scraping
+      products = driver.find_elements(:css, '.Products__items > li.Product')
+      products.each do |product|
+        title, price, postage, time_left, url, image_url = fetch_product_info(product)
+        new_postage = format_postage(postage)
+        total_price = calculate_total_price(price, new_postage, postage)
 
-      image_filename = download_image(title, image_url)
-      csv << [title, price, new_postage, total_price, hours_left, url, image_filename]
+        next unless time_left.include?('時間')
+
+        hours_left = time_left.gsub('時間', '').strip.to_i
+        next if hours_left > 12
+
+        image_filename = download_image(title, image_url)
+        csv << [title, price, new_postage, total_price, hours_left, url, image_filename]
+      end
+
+      # ページ内の商品数が50未満の場合はフラグをfalseにしてループを終了する
+      if products.size < 50
+        continue_scraping = false
+      else
+        # 次のページへ移動
+        pagination = driver.find_elements(:css, '.Pager__lists > li.Pager__list')
+        next_button = pagination.last.find_element(:css, '.Pager__link')
+        next_button.click
+      end
+      sleep(SLEEP_TIME)
     end
     sleep(SLEEP_TIME)
   end
