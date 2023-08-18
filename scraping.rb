@@ -11,13 +11,13 @@ class YahooAuctionScraper
     @today = Time.now.strftime('%Y%m%d')
     @csv_file = "#{@today}_yahoo_auction_results.csv"
     @images_dir = "#{@today}_downloaded_images"
-    FileUtils.mkdir_p(@images_dir) unless Dir.exists?(@images_dir)
+    FileUtils.mkdir_p(@images_dir) unless Dir.exist?(@images_dir)
     @driver = initialize_browser
   end
 
   def scrape(items_to_search)
     CSV.open(@csv_file, 'w', encoding: 'Shift_JIS') do |csv|
-      csv << ['商品名', '価格', '送料', '合計価格', '残り時間', 'URL', '画像パス']
+      csv << %w[商品名 価格 送料 合計価格 残り時間 URL 画像パス]
       items_to_search.each do |word, min_max_price|
         search_item(@driver, word, min_max_price[0], min_max_price[1])
         extract_data_and_write(csv)
@@ -38,7 +38,7 @@ class YahooAuctionScraper
     driver.find_element(:xpath, '//input[@placeholder="すべて含む"]').send_keys(word)
     driver.find_element(:xpath, '//input[@name="aucminprice"]').send_keys(min_price)
     driver.find_element(:xpath, '//input[@name="aucmaxprice"]').send_keys(max_price)
-    driver.find_element(:id, 'btn').click()
+    driver.find_element(:id, 'btn').click
     sleep(SLEEP_TIME)
   end
 
@@ -47,7 +47,7 @@ class YahooAuctionScraper
     title_element = product.find_element(:css, '.Product__titleLink')
     title = title_element.text
     url = title_element.attribute('href')
-    price = product.find_element(:css, '.Product__priceValue').text
+    price = product.find_element(:css, '.Product__priceValue').text.delete(',円').to_i
     postage = product.find_element(:css, '.Product__postage').text
     time_left_element = product.find_element(:css, '.Product__time')
     time_left = time_left_element.text
@@ -62,7 +62,7 @@ class YahooAuctionScraper
     image_filename = File.join(@images_dir, safe_filename(title))
     begin
       IO.copy_stream(URI.open(image_url), image_filename)
-    rescue => e
+    rescue StandardError => e
       puts "Error occurred: #{e.message}"
     end
     image_filename
@@ -70,7 +70,7 @@ class YahooAuctionScraper
 
   def safe_filename(title)
     # 特定の文字を取り除き、スペースをアンダースコアに置換
-    title.gsub(/[\/\?<>\\:\*\|"]/,'').gsub(' ', '_')[0, 50] + ".png"
+    title.gsub(%r{[/?<>\\:*|"]}, '').gsub(' ', '_')[0, 50] + '.png'
   end
 
   # 送料の整形
@@ -88,9 +88,9 @@ class YahooAuctionScraper
   # 合計価格の計算
   def calculate_total_price(price, new_postage, postage)
     if postage.include?('＋送料')
-      (price.delete(',円')).to_i + (new_postage.delete(',円')).to_i
+      price + new_postage.delete(',円').to_i
     elsif postage == '送料無料'
-      (price.delete(',円')).to_i
+      price.delete(',円').to_i
     else
       ''
     end
@@ -134,7 +134,7 @@ end
 
 scraper = YahooAuctionScraper.new
 items_to_search = {
-  "RRL Tシャツ" => [1000, 2000],
-  "ラルフローレン アロハシャツ" => [1000, 10000]
+  'RRL Tシャツ' => [1000, 2000],
+  'ラルフローレン アロハシャツ' => [1000, 10_000]
 }
 scraper.scrape(items_to_search)
