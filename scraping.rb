@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'selenium-webdriver'
 require 'csv'
 require 'open-uri'
@@ -70,7 +72,7 @@ class YahooAuctionScraper
 
   def safe_filename(title)
     # 特定の文字を取り除き、スペースをアンダースコアに置換
-    title.gsub(%r{[/?<>\\:*|"]}, '').gsub(' ', '_')[0, 50] + '.png'
+    "#{title.gsub(%r{[/?<>\\:*|"]}, '').gsub(' ', '_')[0, 50]}.png"
   end
 
   # 送料の整形
@@ -98,7 +100,7 @@ class YahooAuctionScraper
 
   # メインの処理
   def extract_data_and_write(csv)
-    wait = Selenium::WebDriver::Wait.new(timeout: TIMEOUT)
+    Selenium::WebDriver::Wait.new(timeout: TIMEOUT)
 
     continue_scraping = true
 
