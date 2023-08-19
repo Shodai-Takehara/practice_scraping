@@ -27,7 +27,7 @@ class CsvToExcelConverter
 
         if header == 'URL' && cell
           worksheet1.write(index + 1, adjusted_idx, cell, url_format)
-        elsif header == 'image_path' && cell
+        elsif header == 'IMAGE_PATH' && cell
           absolute_image_path = File.join(current_directory, cell)
           if File.exist?(absolute_image_path)
             worksheet2.insert_image(index, 0, absolute_image_path, cell_idx * 30, index * 150, 0.5, 0.5)

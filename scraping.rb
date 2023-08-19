@@ -22,15 +22,20 @@ class YahooAuctionScraper
 
   def scrape(items_to_search)
     CSV.open(@csv_file, 'w', encoding: 'Shift_JIS') do |csv|
-      csv << %w[商品名 価格 送料 合計価格 残り時間 URL image_path]
+      csv << %w[商品名 価格 送料 合計価格 残り時間 URL IMAGE_PATH]
       items_to_search.each do |word, min_max_price|
         search_item(@driver, word, min_max_price[0], min_max_price[1])
         extract_data_and_write(csv)
       end
     end
     @driver.quit
-    # @csv_file を返す
     @csv_file
+  end
+
+  # CSVファイルと画像ディレクトリの削除
+  def clean_up
+    File.delete(@csv_file) if File.exist?(@csv_file)
+    FileUtils.rm_rf(@images_dir) if Dir.exist?(@images_dir)
   end
 
   private
@@ -148,3 +153,5 @@ scraper.scrape(items_to_search)
 
 converter = CsvToExcelConverter.new
 converter.convert(scraper.csv_file)
+
+scraper.clean_up
