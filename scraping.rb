@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative 'csv_to_excel_converter'
 require 'selenium-webdriver'
 require 'csv'
 require 'open-uri'
@@ -8,6 +9,8 @@ class YahooAuctionScraper
   BASE_URL = 'https://auctions.yahoo.co.jp/search/advanced?auccat=0'
   SLEEP_TIME = 3
   TIMEOUT = 5
+
+  attr_reader :csv_file
 
   def initialize
     @today = Time.now.strftime('%Y%m%d')
@@ -19,13 +22,15 @@ class YahooAuctionScraper
 
   def scrape(items_to_search)
     CSV.open(@csv_file, 'w', encoding: 'Shift_JIS') do |csv|
-      csv << %w[商品名 価格 送料 合計価格 残り時間 URL 画像パス]
+      csv << %w[商品名 価格 送料 合計価格 残り時間 URL image_path]
       items_to_search.each do |word, min_max_price|
         search_item(@driver, word, min_max_price[0], min_max_price[1])
         extract_data_and_write(csv)
       end
     end
     @driver.quit
+    # @csv_file を返す
+    @csv_file
   end
 
   private
@@ -140,3 +145,6 @@ items_to_search = {
   'ラルフローレン アロハシャツ' => [1000, 10_000]
 }
 scraper.scrape(items_to_search)
+
+converter = CsvToExcelConverter.new
+converter.convert(scraper.csv_file)

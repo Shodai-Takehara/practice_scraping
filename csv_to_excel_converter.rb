@@ -42,6 +42,3 @@ class CsvToExcelConverter
     workbook.close
   end
 end
-
-converter = CsvToExcelConverter.new
-converter.convert(ARGV[0])
