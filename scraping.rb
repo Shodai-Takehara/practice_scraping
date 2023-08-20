@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'csv_to_excel_converter'
+require_relative 'slack_notifier'
 require 'selenium-webdriver'
 require 'csv'
 require 'open-uri'
@@ -155,3 +156,6 @@ converter = CsvToExcelConverter.new
 converter.convert(scraper.csv_file)
 
 scraper.clean_up
+# slack通知
+notifier = SlackNotifier.new
+notifier.notify("<!here> #{scraper.csv_file.sub('.csv', '.xlsx')}を作成しました")

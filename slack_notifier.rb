@@ -1,37 +1,38 @@
 # frozen_string_literal: true
 
 require 'net/http'
-require 'uri'
 require 'json'
 
 class SlackNotifier
-  def initialize(webhook_url)
-    @webhook_url = webhook_url
+  def initialize
+    @webhook_url = 'https://hooks.slack.com/services/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'
   end
 
-  def send_message(text, channel: 'C05NKHPN30T', username: 'OGIXXX', icon_emoji: ':rocket:')
+  def notify(message, options = {})
     payload = {
-      text: text,
-      channel: channel,
-      username: username,
-      icon_emoji: icon_emoji
-    }.compact
-
-    uri = URI.parse(@webhook_url)
-    request = Net::HTTP::Post.new(uri)
-    request.body = JSON.dump(payload)
-
-    req_options = {
-      use_ssl: uri.scheme == 'https'
+      channel: 'C05NKLP36R0',
+      text: message,
+      username: options[:username] || 'Notifier',
+      icon_emoji: options[:icon_emoji] || ':white_check_mark:'
     }
 
-    Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
-      http.request(request)
-    end
+    send_payload(payload)
+  end
+
+  private
+
+  def send_payload(payload)
+    uri = URI(@webhook_url)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+
+    request = Net::HTTP::Post.new(uri.path, { 'Content-Type' => 'application/json' })
+    request.body = payload.to_json
+
+    response = http.request(request)
+
+    return if response.is_a?(Net::HTTPSuccess)
+
+    puts "Slack通知エラー: #{response.code} - #{response.body}"
   end
 end
-
-# 使用方法
-webhook_url = 'https://hooks.slack.com/services/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'
-notifier = SlackNotifier.new(webhook_url)
-notifier.send_message('送信しました', channel: 'C05NKLP36R0', username: 'Messenger', icon_emoji: ':white_check_mark:')
